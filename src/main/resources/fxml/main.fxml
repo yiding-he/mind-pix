@@ -1,12 +1,49 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import javafx.scene.control.Label?>
+<?import com.hyd.mindpix.components.ImagePreview?>
+<?import com.hyd.mindpix.components.ThumbnailList?>
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
 <?import javafx.scene.layout.BorderPane?>
+<?import org.kordamp.ikonli.javafx.FontIcon?>
 <BorderPane xmlns="http://javafx.com/javafx"
             xmlns:fx="http://javafx.com/fxml"
             fx:controller="com.hyd.mindpix.controllers.MainController"
             prefHeight="400.0" prefWidth="600.0">
-<center>
-  <Label text="Hello, world" />
-</center>
+  <top>
+    <MenuBar>
+      <Menu text="文件(_F)">
+        <graphic>
+          <FontIcon iconColor="#666666" iconLiteral="far-file" iconSize="16"/>
+        </graphic>
+        <MenuItem text="打开文件夹...(_O)" onAction="#openFolder">
+          <graphic>
+            <FontIcon iconLiteral="far-folder-open" iconSize="16"/>
+          </graphic>
+        </MenuItem>
+      </Menu>
+    </MenuBar>
+  </top>
+  <center>
+    <SplitPane dividerPositions="0.5">
+      <BorderPane>
+        <center>
+          <ScrollPane fitToWidth="true" fitToHeight="true">
+            <ThumbnailList fx:id="thumbnailList" hgap="10" vgap="10">
+              <padding>
+                <Insets bottom="10" left="10" right="10" top="10"/>
+              </padding>
+            </ThumbnailList>
+          </ScrollPane>
+        </center>
+      </BorderPane>
+      <BorderPane>
+        <center>
+          <ScrollPane fitToWidth="true" fitToHeight="true">
+            <ImagePreview fx:id="imagePreview"/>
+          </ScrollPane>
+        </center>
+      </BorderPane>
+    </SplitPane>
+  </center>
 </BorderPane>

@@ -8,3 +8,7 @@ end_of_line = lf
 charset = utf-8
 trim_trailing_whitespace = true
 insert_final_newline = true
+
+[*.java]
+ij_java_blank_lines_around_field = 1
+ij_java_blank_lines_around_method = 1
