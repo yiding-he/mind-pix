@@ -55,15 +55,8 @@ public class Thumbnail extends StackPane {
 
     this.focusedProperty().addListener((_, _, focused) -> {
       if (focused) {
-        log.info("Thumbnail instance get focused: {}", this);
         focusedStyle();
         MindPixApplication.CURRENT_IMAGE.set(this.imagePath);
-      } else {
-        log.info("Thumbnail instance lost focus: {}", this);
-        defaultStyle();
-        if (MindPixApplication.CURRENT_IMAGE.get().equals(this.imagePath)) {
-          MindPixApplication.CURRENT_IMAGE.set(null);
-        }
       }
     });
     defaultStyle();

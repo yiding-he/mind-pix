@@ -4,8 +4,9 @@
 <?import com.hyd.mindpix.components.ThumbnailList?>
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.control.*?>
-<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.*?>
 <?import org.kordamp.ikonli.javafx.FontIcon?>
+<?import javafx.scene.image.ImageView?>
 <BorderPane xmlns="http://javafx.com/javafx"
             xmlns:fx="http://javafx.com/fxml"
             fx:controller="com.hyd.mindpix.controllers.MainController"
@@ -38,10 +39,23 @@
         </center>
       </BorderPane>
       <BorderPane>
+        <top>
+          <ToolBar>
+            <Label text="显示模式:"/>
+            <RadioButton fx:id="dynamicModeRadio" text="动态适应" selected="true" onAction="#onDisplayModeChanged">
+              <toggleGroup>
+                <ToggleGroup fx:id="displayModeGroup"/>
+              </toggleGroup>
+            </RadioButton>
+            <RadioButton fx:id="fixedModeRadio" text="固定尺寸" onAction="#onDisplayModeChanged" toggleGroup="$displayModeGroup"/>
+            <Separator orientation="VERTICAL"/>
+            <Label text="缩放比例:"/>
+            <ComboBox fx:id="scaleComboBox" onAction="#onScaleChanged" disable="true" prefWidth="80"/>
+          </ToolBar>
+        </top>
         <center>
-          <ScrollPane fitToWidth="true" fitToHeight="true">
-            <ImagePreview fx:id="imagePreview"/>
-          </ScrollPane>
+          <ImagePreview fx:id="imagePreview">
+          </ImagePreview>
         </center>
       </BorderPane>
     </SplitPane>

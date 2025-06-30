@@ -23,7 +23,7 @@ public class MindPixApplication extends Application {
     fxmlLoader.setLocation(mainFxml);
 
     stage.setTitle("Mind Pix - 图库浏览整理工具");
-    stage.setScene(new Scene(fxmlLoader.load(), 1200, 800));
+    stage.setScene(new Scene(fxmlLoader.load(), 1200, 700));
     stage.show();
   }
 }
