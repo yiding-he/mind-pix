@@ -29,7 +29,7 @@
     <SplitPane dividerPositions="0.5">
       <BorderPane>
         <center>
-          <ScrollPane fitToWidth="true" fitToHeight="true">
+          <ScrollPane fitToWidth="true" fitToHeight="true" fx:id="thumbnailScrollPane">
             <ThumbnailList fx:id="thumbnailList" hgap="10" vgap="10">
               <padding>
                 <Insets bottom="10" left="10" right="10" top="10"/>

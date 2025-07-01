@@ -1,8 +1,12 @@
 package com.hyd.mindpix.components;
 
+import com.hyd.mindpix.Events;
 import com.hyd.mindpix.MindPixApplication;
+import com.hyd.mindpix.MindPixMain;
 import com.hyd.mindpix.utils.FilenameUtils;
 import javafx.application.Platform;
+import javafx.beans.property.BooleanProperty;
+import javafx.beans.property.SimpleBooleanProperty;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.Label;
@@ -30,6 +34,8 @@ public class Thumbnail extends StackPane {
   @Getter
   private final String imagePath;
 
+  private final SimpleBooleanProperty active = new SimpleBooleanProperty(false);
+
   public Thumbnail(String imagePath) {
     this(PLACEHOLDER_IMAGE, imagePath);
   }
@@ -53,17 +59,18 @@ public class Thumbnail extends StackPane {
     StackPane.setAlignment(label, Pos.BOTTOM_CENTER);
     getChildren().addAll(imageView, label);
 
-    this.focusedProperty().addListener((_, _, focused) -> {
-      if (focused) {
-        focusedStyle();
+    this.activeProperty().addListener((_, _, active) -> {
+      if (active) {
+        activeStyle();
         MindPixApplication.CURRENT_IMAGE.set(this.imagePath);
+      } else {
+        defaultStyle();
       }
     });
     defaultStyle();
 
     // 这里必须用 Platform.runLater 否则无法获得焦点
-    this.setFocusTraversable(true);
-    this.setOnMousePressed(_ -> Platform.runLater(this::requestFocus));
+    this.setOnMousePressed(_ -> MindPixMain.publish(new Events.NavigationEvent.GotoImage(this)));
   }
 
   private void defaultStyle() {
@@ -72,7 +79,8 @@ public class Thumbnail extends StackPane {
       -fx-background-insets: 0;
       -fx-padding: 0;
       -fx-border-color: transparent;
-      -fx-border-width: 2;""");
+      -fx-border-radius: 5;
+      -fx-border-width: 5;""");
     this.label.setStyle("""
       -fx-background-color: #00000080;
       -fx-background-insets: 0;
@@ -80,16 +88,29 @@ public class Thumbnail extends StackPane {
       -fx-text-fill: #ffffff;""");
   }
 
-  private void focusedStyle() {
+  private void activeStyle() {
     this.setStyle("""
       -fx-background-color: #00000020;
       -fx-background-insets: 0;
       -fx-padding: 0;
-      -fx-border-color: #61a6df;
-      -fx-border-width: 2;""");
+      -fx-border-color: #fb6934;
+      -fx-border-radius: 5;
+      -fx-border-width: 5;""");
   }
 
   public void setImage(Image image) {
     this.imageView.setImage(image);
+  }
+
+  public void setActive(boolean active) {
+    this.active.set(active);
+  }
+
+  public boolean isActive() {
+    return this.active.get();
+  }
+
+  public BooleanProperty activeProperty() {
+    return this.active;
   }
 }
