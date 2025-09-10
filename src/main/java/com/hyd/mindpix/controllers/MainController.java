@@ -2,6 +2,7 @@ package com.hyd.mindpix.controllers;
 
 import com.hyd.mindpix.Events;
 import com.hyd.mindpix.MindPixApplication;
+import com.hyd.mindpix.MindPixMain;
 import com.hyd.mindpix.components.ImagePreview;
 import com.hyd.mindpix.components.Thumbnail;
 import com.hyd.mindpix.components.ThumbnailList;
@@ -13,6 +14,7 @@ import javafx.scene.control.RadioButton;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.ToggleGroup;
 import javafx.scene.image.Image;
+import javafx.scene.input.KeyCode;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.Stage;
 import lombok.extern.slf4j.Slf4j;
@@ -68,6 +70,15 @@ public class MainController {
         }
       } else {
         imagePreview.setImage(null);
+      }
+    });
+
+    // Add key listeners
+    this.thumbnailScrollPane.setOnKeyPressed(event -> {
+      if (event.getCode() == KeyCode.RIGHT) {
+        MindPixMain.publish(new Events.NavigationEvent.NextImage());
+      } else if (event.getCode() == KeyCode.LEFT) {
+        MindPixMain.publish(new Events.NavigationEvent.PrevImage());
       }
     });
   }

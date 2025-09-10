@@ -1,0 +1,1 @@
+%JAVA_24_HOME%\bin\java.exe -jar .\target\mind-pix-1.0-SNAPSHOT.jar

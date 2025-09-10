@@ -2,6 +2,7 @@ package com.hyd.mindpix.components;
 
 import com.hyd.mindpix.Events;
 import com.hyd.mindpix.MindPixMain;
+import com.hyd.mindpix.utils.ImageUtils;
 import javafx.application.Platform;
 import javafx.scene.Node;
 import javafx.scene.image.Image;
@@ -16,24 +17,21 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
 @Slf4j
 public class ThumbnailList extends FlowPane {
+
+  private static final Set<String> SUPPORTED_IMAGE_EXTENSIONS = Set.of(
+    ".jpg", ".png", ".jpeg", ".gif", ".bmp", ".webp"
+  );
 
   private volatile String currentFolder;
 
   public ThumbnailList() {
     setOnDragOver(this::handleDragOver);
     setOnDragDropped(this::handleDragDropped);
-
-    // Add key listeners
-    this.setOnKeyPressed(event -> {
-      if (event.getCode() == KeyCode.RIGHT) {
-        MindPixMain.publish(new Events.NavigationEvent.PrevImage());
-      } else if (event.getCode() == KeyCode.LEFT) {
-        MindPixMain.publish(new Events.NavigationEvent.NextImage());
-      }
-    });
+    setFocusTraversable(true);
   }
 
   private List<Thumbnail> getThumbnailList() {
@@ -100,10 +98,7 @@ public class ThumbnailList extends FlowPane {
     currentFolder = absolutePath;
     this.getChildren().clear();
     for (File file : Objects.requireNonNull(new File(absolutePath).listFiles())) {
-      if (file.isFile() && (
-        file.getName().endsWith(".jpg") || file.getName().endsWith(".png") || file.getName().endsWith(".jpeg") ||
-          file.getName().endsWith(".gif") || file.getName().endsWith(".bmp")
-      )) {
+      if (file.isFile() && SUPPORTED_IMAGE_EXTENSIONS.stream().anyMatch(ext -> file.getName().endsWith(ext))) {
         Thumbnail thumbnail = new Thumbnail(file.getAbsolutePath());
         this.getChildren().add(thumbnail);
       }
@@ -118,8 +113,11 @@ public class ThumbnailList extends FlowPane {
         if (child instanceof Thumbnail thumbnail) {
           String imagePath = thumbnail.getImagePath();
           try (FileInputStream fis = new FileInputStream(imagePath)) {
-            Image thumbnailImage = new Image(fis, 180, 180, true, true);
-            Platform.runLater(() -> thumbnail.setImage(thumbnailImage));
+            Image originalImage = new Image(fis);
+            Platform.runLater(() -> {
+              Image thumbnailImage = ImageUtils.resize(originalImage, 180, 180, true);
+              thumbnail.setImage(thumbnailImage);
+            });
           } catch (IOException e) {
             throw new RuntimeException(e);
           }
