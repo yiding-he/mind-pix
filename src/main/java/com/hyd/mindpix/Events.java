@@ -4,6 +4,20 @@ import com.hyd.mindpix.components.Thumbnail;
 
 public interface Events {
 
+  interface LoadingImagesEvent {
+    record Started() {
+    }
+
+    record Finished() {
+    }
+
+    record Progress(int current, int total) {
+      public double progress() {
+        return (double) current / total;
+      }
+    }
+  }
+
   interface NavigationEvent {
 
     record PrevImage() {

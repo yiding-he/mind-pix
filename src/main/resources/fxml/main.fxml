@@ -28,14 +28,27 @@
   <center>
     <SplitPane dividerPositions="0.5">
       <BorderPane>
+        <top>
+          <HBox fx:id="readingProgressPane" spacing="5">
+            <padding>
+              <Insets topRightBottomLeft="5"/>
+            </padding>
+            <Label fx:id="readingProgressLabel" text="0/0"/>
+            <ProgressBar fx:id="readingProgressBar" HBox.hgrow="ALWAYS" maxWidth="Infinity" progress="0"/>
+          </HBox>
+        </top>
         <center>
-          <ScrollPane fitToWidth="true" fitToHeight="true" fx:id="thumbnailScrollPane">
-            <ThumbnailList fx:id="thumbnailList" hgap="10" vgap="10">
-              <padding>
-                <Insets bottom="10" left="10" right="10" top="10"/>
-              </padding>
-            </ThumbnailList>
-          </ScrollPane>
+          <TabPane fx:id="collectionsTabPane">
+            <Tab text="默认集合" closable="false" fx:id="defaultTab">
+              <ScrollPane fitToWidth="true" fitToHeight="true" fx:id="thumbnailScrollPane">
+                <ThumbnailList fx:id="thumbnailList" hgap="10" vgap="10">
+                  <padding>
+                    <Insets bottom="10" left="10" right="10" top="10"/>
+                  </padding>
+                </ThumbnailList>
+              </ScrollPane>
+            </Tab>
+          </TabPane>
         </center>
       </BorderPane>
       <BorderPane>

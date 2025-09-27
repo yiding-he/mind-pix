@@ -1,6 +1,7 @@
 package com.hyd.mindpix.components;
 
 import com.hyd.mindpix.Events;
+import com.hyd.mindpix.Events.LoadingImagesEvent;
 import com.hyd.mindpix.MindPixMain;
 import com.hyd.mindpix.utils.ImageUtils;
 import javafx.application.Platform;
@@ -15,9 +16,12 @@ import lombok.extern.slf4j.Slf4j;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.sql.Array;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @Slf4j
 public class ThumbnailList extends FlowPane {
@@ -106,22 +110,32 @@ public class ThumbnailList extends FlowPane {
 
     Thread.startVirtualThread(() -> {
       var loadingFolder = currentFolder;
-      for (Node child : this.getChildren()) {
-        if (!(loadingFolder.equals(currentFolder))) {
-          return;
-        }
-        if (child instanceof Thumbnail thumbnail) {
-          String imagePath = thumbnail.getImagePath();
-          try (FileInputStream fis = new FileInputStream(imagePath)) {
-            Image originalImage = new Image(fis);
-            Platform.runLater(() -> {
-              Image thumbnailImage = ImageUtils.resize(originalImage, 180, 180, true);
-              thumbnail.setImage(thumbnailImage);
-            });
-          } catch (IOException e) {
-            throw new RuntimeException(e);
+      MindPixMain.publish(new LoadingImagesEvent.Started());
+      try {
+
+        var total = (int) this.getChildren().stream().filter(child -> child instanceof Thumbnail).count();
+        var counter = new AtomicInteger();
+
+        for (Node child : new ArrayList<>(this.getChildren())) {
+          if (!(loadingFolder.equals(currentFolder))) {
+            return;
+          }
+          if (child instanceof Thumbnail thumbnail) {
+            String imagePath = thumbnail.getImagePath();
+            try (FileInputStream fis = new FileInputStream(imagePath)) {
+              Image originalImage = new Image(fis);
+              Image thumbnailImage = ImageUtils.resize(originalImage, 180, 180);
+              Platform.runLater(() -> {
+                thumbnail.setImage(thumbnailImage);
+                MindPixMain.publish(new LoadingImagesEvent.Progress(counter.incrementAndGet(), total));
+              });
+            } catch (IOException e) {
+              throw new RuntimeException(e);
+            }
           }
         }
+      } finally {
+        MindPixMain.publish(new LoadingImagesEvent.Finished());
       }
     });
 

@@ -8,13 +8,12 @@ import com.hyd.mindpix.components.Thumbnail;
 import com.hyd.mindpix.components.ThumbnailList;
 import com.hyd.mindpix.enums.ImageDisplayMode;
 import com.hyd.mindpix.enums.ScaleRatio;
+import javafx.application.Platform;
 import javafx.collections.FXCollections;
-import javafx.scene.control.ComboBox;
-import javafx.scene.control.RadioButton;
-import javafx.scene.control.ScrollPane;
-import javafx.scene.control.ToggleGroup;
+import javafx.scene.control.*;
 import javafx.scene.image.Image;
 import javafx.scene.input.KeyCode;
+import javafx.scene.layout.HBox;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.Stage;
 import lombok.extern.slf4j.Slf4j;
@@ -43,6 +42,16 @@ public class MainController {
   public ComboBox<ScaleRatio> scaleComboBox;
 
   public ScrollPane thumbnailScrollPane;
+
+  public ProgressBar readingProgressBar;
+
+  public HBox readingProgressPane;
+
+  public Label readingProgressLabel;
+
+  public Tab defaultTab;
+
+  public TabPane collectionsTabPane;
 
   public void initialize() {
     // Initialize scale combo box
@@ -121,27 +130,71 @@ public class MainController {
     scrollToActiveThumbnail(event.thumbnail());
   }
 
-  private void scrollToActiveThumbnail(Thumbnail thumbnail) {
-    double contentHeight = thumbnailList.localToScene(thumbnailList.getBoundsInLocal()).getHeight();
-    var vpBounds = this.thumbnailScrollPane.getViewportBounds();
-    var thBounds = thumbnail.localToScene(thumbnail.getBoundsInLocal());
-    var vValue = this.thumbnailScrollPane.getVvalue();
-    double newV = Double.MIN_VALUE;
-    if (thBounds.getMinY() < 0) {
-      newV = vValue - ((-thBounds.getMinY() + 100) / contentHeight);
-    } else if (thBounds.getMaxY() > vpBounds.getHeight()) {
-      newV = vValue + ((thBounds.getMaxY() - vpBounds.getHeight() + 50) / contentHeight);
-    }
-    if (newV != Double.MIN_VALUE) {
-      double fixedNewV = Double.min(this.thumbnailScrollPane.getVmax(),
-        Double.max(this.thumbnailScrollPane.getVmin(), newV)
-      );
-      log.info("Scrolling to active thumbnail, v={}, vmin={}, vmax={}",
-        fixedNewV, this.thumbnailScrollPane.getVmin(), this.thumbnailScrollPane.getVmax()
-      );
-      this.thumbnailScrollPane.setVvalue(fixedNewV);
-    }
+  @EventListener
+  public void onLoadingStarted(Events.LoadingImagesEvent.Started event) {
+    log.info("Loading images started.");
+    Platform.runLater(() -> readingProgressPane.setMaxHeight(-1));
   }
+
+  @EventListener
+  public void onLoadingFinished(Events.LoadingImagesEvent.Finished event) {
+    log.info("Loading images finished, progressBar {}", readingProgressBar == null ? "not exists" : "exists");
+    Platform.runLater(() -> readingProgressPane.setMaxHeight(0));
+  }
+
+  @EventListener
+  public void onLoadingProgress(Events.LoadingImagesEvent.Progress event) {
+    Platform.runLater(() -> {
+      if (readingProgressPane.getMaxHeight() != -1) {
+        readingProgressPane.setMaxHeight(-1);
+      }
+      readingProgressBar.setProgress(event.progress());
+      readingProgressLabel.setText(event.current() + "/" + event.total());
+    });
+  }
+
+  private void scrollToActiveThumbnail(Thumbnail thumbnail) {
+    // 获取thumbnail在thumbnailList中的位置（使用父容器坐标系）
+    double thumbnailY = thumbnail.getBoundsInParent().getMinY();
+    double thumbnailHeight = thumbnail.getBoundsInParent().getHeight();
+
+    // 获取viewport的高度
+    double viewportHeight = thumbnailScrollPane.getViewportBounds().getHeight();
+
+    // 获取当前滚动位置和范围
+    double vmin = thumbnailScrollPane.getVmin();
+    double vmax = thumbnailScrollPane.getVmax();
+
+    // 计算内容总高度（通过viewport高度和vmax-vmin范围来推算）
+    double contentHeight = thumbnailList.getHeight();
+
+    // 如果内容高度为0，说明布局尚未完成，暂时不滚动
+    if (contentHeight <= 0) {
+      return;
+    }
+
+    // 计算当前视口在内容中的位置
+    double viewportPosition = thumbnailScrollPane.getVvalue() * (contentHeight - viewportHeight);
+
+    // 计算需要滚动到的目标位置
+    double targetViewportPosition = viewportPosition;
+
+    // 如果thumbnail顶部在可视区域上方
+    if (thumbnailY < viewportPosition) {
+      targetViewportPosition = thumbnailY - 10;
+    }
+    // 如果thumbnail底部在可视区域下方
+    else if (thumbnailY + thumbnailHeight > viewportPosition + viewportHeight) {
+      targetViewportPosition = thumbnailY + thumbnailHeight - viewportHeight + 10;
+    }
+
+    // 转换为目标vvalue并限制在有效范围内
+    double targetVvalue = Math.max(vmin, Math.min(vmax, targetViewportPosition / (contentHeight - viewportHeight)));
+
+    // 执行滚动
+    thumbnailScrollPane.setVvalue(targetVvalue);
+  }
+
 
   public void onDisplayModeChanged() {
     ImageDisplayMode mode = dynamicModeRadio.isSelected() ?
