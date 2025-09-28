@@ -140,7 +140,7 @@ public class ThumbnailList extends FlowPane {
 
     Thread.startVirtualThread(() -> {
       var loadingFolder = currentFolder;
-      MindPixMain.publish(new LoadingImagesEvent.Started());
+      MindPixMain.publish(new LoadingImagesEvent.Started(absolutePath));
       try {
 
         var total = (int) this.getChildren().stream().filter(child -> child instanceof Thumbnail).count();

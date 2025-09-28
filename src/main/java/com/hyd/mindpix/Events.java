@@ -5,7 +5,7 @@ import com.hyd.mindpix.components.Thumbnail;
 public interface Events {
 
   interface LoadingImagesEvent {
-    record Started() {
+    record Started(String folderAbsolutePath) {
     }
 
     record Finished() {

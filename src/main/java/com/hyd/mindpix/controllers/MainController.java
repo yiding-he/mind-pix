@@ -8,6 +8,8 @@ import com.hyd.mindpix.components.ThumbnailList;
 import com.hyd.mindpix.enums.ImageDisplayMode;
 import com.hyd.mindpix.enums.ScaleRatio;
 import javafx.application.Platform;
+import javafx.beans.property.ObjectProperty;
+import javafx.beans.property.SimpleObjectProperty;
 import javafx.collections.FXCollections;
 import javafx.scene.control.*;
 import javafx.scene.image.Image;
@@ -44,6 +46,8 @@ public class MainController {
   public Label readingProgressLabel;
 
   public TabPane collectionsTabPane;
+
+  private final ObjectProperty<File> currentFolder = new SimpleObjectProperty<>();
 
   public void initialize() {
     // Initialize scale combo box
@@ -150,6 +154,7 @@ public class MainController {
   @EventListener
   public void onLoadingStarted(Events.LoadingImagesEvent.Started event) {
     log.info("Loading images started.");
+    this.currentFolder.set(new File(event.folderAbsolutePath()));
     Platform.runLater(() -> readingProgressPane.setMaxHeight(-1));
   }
 
@@ -190,7 +195,13 @@ public class MainController {
 
     DirectoryChooser directoryChooser = new DirectoryChooser();
     directoryChooser.setTitle("选择图片文件夹");
+    if (this.currentFolder.get() != null) {
+      directoryChooser.setInitialDirectory(this.currentFolder.get());
+    }
 
+    // this.currentFolder 属性不在这个方法中赋值，而是通过事件侦听赋值，
+    // 因为触发 LoadingImagesEvent.Started 事件的方式有多种，
+    // 所以 this.currentFolder 赋值统一在 LoadingImagesEvent.Started 事件中进行
     Stage stage = (Stage) collectionsTabPane.getScene().getWindow();
     File dir = directoryChooser.showDialog(stage);
     if (dir != null && dir.isDirectory()) {
