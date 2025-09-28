@@ -124,7 +124,6 @@ public class ImagePreview extends ScrollPane {
   }
 
   public void setImage(Image image) {
-    log.info("Changing image to {}", image);
     imageView.setImage(image);
     if (image!= null) {
       imageWidth = image.getWidth();

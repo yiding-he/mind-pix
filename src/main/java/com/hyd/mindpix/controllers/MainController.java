@@ -2,9 +2,8 @@ package com.hyd.mindpix.controllers;
 
 import com.hyd.mindpix.Events;
 import com.hyd.mindpix.MindPixApplication;
-import com.hyd.mindpix.MindPixMain;
+import com.hyd.mindpix.components.ImageCollectionTab;
 import com.hyd.mindpix.components.ImagePreview;
-import com.hyd.mindpix.components.Thumbnail;
 import com.hyd.mindpix.components.ThumbnailList;
 import com.hyd.mindpix.enums.ImageDisplayMode;
 import com.hyd.mindpix.enums.ScaleRatio;
@@ -12,7 +11,6 @@ import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.scene.control.*;
 import javafx.scene.image.Image;
-import javafx.scene.input.KeyCode;
 import javafx.scene.layout.HBox;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.Stage;
@@ -28,8 +26,6 @@ import java.io.IOException;
 @Slf4j
 public class MainController {
 
-  public ThumbnailList thumbnailList;
-
   public ImagePreview imagePreview;
 
   // Display mode controls
@@ -41,15 +37,11 @@ public class MainController {
 
   public ComboBox<ScaleRatio> scaleComboBox;
 
-  public ScrollPane thumbnailScrollPane;
-
   public ProgressBar readingProgressBar;
 
   public HBox readingProgressPane;
 
   public Label readingProgressLabel;
-
-  public Tab defaultTab;
 
   public TabPane collectionsTabPane;
 
@@ -82,15 +74,12 @@ public class MainController {
       }
     });
 
-    // Add key listeners
-    this.thumbnailScrollPane.setOnKeyPressed(event -> {
-      if (event.getCode() == KeyCode.RIGHT) {
-        MindPixMain.publish(new Events.NavigationEvent.NextImage());
-      } else if (event.getCode() == KeyCode.LEFT) {
-        MindPixMain.publish(new Events.NavigationEvent.PrevImage());
-      }
-    });
+    ImageCollectionTab defaultCollection = new ImageCollectionTab("[默认集合]");
+    defaultCollection.setClosable(false);
+    this.collectionsTabPane.getTabs().add(defaultCollection);
   }
+
+  //----------------------------------------------------
 
   private void setupDisplayModeBinding() {
     // Listen to ImagePreview display mode changes and update radio buttons
@@ -110,24 +99,52 @@ public class MainController {
     }
   }
 
+  private ThumbnailList getCurrentThumbnailList() {
+    Tab selectedTab = collectionsTabPane.getSelectionModel().getSelectedItem();
+    if (selectedTab == null) {
+      return null;
+    }
+    return ((ImageCollectionTab) selectedTab).getThumbnailList();
+  }
+
+  private ImageCollectionTab getCurrentCollectionTab() {
+    Tab selectedTab = collectionsTabPane.getSelectionModel().getSelectedItem();
+    if (selectedTab == null) {
+      return null;
+    }
+    return (ImageCollectionTab) selectedTab;
+  }
+
   @EventListener
   public void onPrevImage(Events.NavigationEvent.PrevImage ignoredEvent) {
-    this.thumbnailList.changeActiveThumbnail(-1);
+    var thumbnailList = getCurrentThumbnailList();
+    if (thumbnailList != null) {
+      thumbnailList.changeActiveThumbnail(-1);
+    }
   }
 
   @EventListener
   public void onNextImage(Events.NavigationEvent.NextImage ignoredEvent) {
-    this.thumbnailList.changeActiveThumbnail(1);
+    var thumbnailList = getCurrentThumbnailList();
+    if (thumbnailList != null) {
+      thumbnailList.changeActiveThumbnail(1);
+    }
   }
 
   @EventListener
   public void onGotoImage(Events.NavigationEvent.GotoImage event) {
-    this.thumbnailList.changeActiveThumbnail(event.thumbnail());
+    var thumbnailList = getCurrentThumbnailList();
+    if (thumbnailList != null) {
+      thumbnailList.changeActiveThumbnail(event.thumbnail());
+    }
   }
 
   @EventListener
   public void onActiveThumbnailChanged(Events.ActiveThumbnailEvent.ActiveThumbnailChanged event) {
-    scrollToActiveThumbnail(event.thumbnail());
+    ImageCollectionTab collectionTab = getCurrentCollectionTab();
+    if (collectionTab != null) {
+      collectionTab.scrollToActiveThumbnail(event.thumbnail());
+    }
   }
 
   @EventListener
@@ -153,48 +170,6 @@ public class MainController {
     });
   }
 
-  private void scrollToActiveThumbnail(Thumbnail thumbnail) {
-    // 获取thumbnail在thumbnailList中的位置（使用父容器坐标系）
-    double thumbnailY = thumbnail.getBoundsInParent().getMinY();
-    double thumbnailHeight = thumbnail.getBoundsInParent().getHeight();
-
-    // 获取viewport的高度
-    double viewportHeight = thumbnailScrollPane.getViewportBounds().getHeight();
-
-    // 获取当前滚动位置和范围
-    double vmin = thumbnailScrollPane.getVmin();
-    double vmax = thumbnailScrollPane.getVmax();
-
-    // 计算内容总高度（通过viewport高度和vmax-vmin范围来推算）
-    double contentHeight = thumbnailList.getHeight();
-
-    // 如果内容高度为0，说明布局尚未完成，暂时不滚动
-    if (contentHeight <= 0) {
-      return;
-    }
-
-    // 计算当前视口在内容中的位置
-    double viewportPosition = thumbnailScrollPane.getVvalue() * (contentHeight - viewportHeight);
-
-    // 计算需要滚动到的目标位置
-    double targetViewportPosition = viewportPosition;
-
-    // 如果thumbnail顶部在可视区域上方
-    if (thumbnailY < viewportPosition) {
-      targetViewportPosition = thumbnailY - 10;
-    }
-    // 如果thumbnail底部在可视区域下方
-    else if (thumbnailY + thumbnailHeight > viewportPosition + viewportHeight) {
-      targetViewportPosition = thumbnailY + thumbnailHeight - viewportHeight + 10;
-    }
-
-    // 转换为目标vvalue并限制在有效范围内
-    double targetVvalue = Math.max(vmin, Math.min(vmax, targetViewportPosition / (contentHeight - viewportHeight)));
-
-    // 执行滚动
-    thumbnailScrollPane.setVvalue(targetVvalue);
-  }
-
 
   public void onDisplayModeChanged() {
     ImageDisplayMode mode = dynamicModeRadio.isSelected() ?
@@ -210,14 +185,19 @@ public class MainController {
   }
 
   public void openFolder() {
-    Stage stage = (Stage) thumbnailList.getScene().getWindow();
+
+    this.collectionsTabPane.getSelectionModel().select(0);
 
     DirectoryChooser directoryChooser = new DirectoryChooser();
     directoryChooser.setTitle("选择图片文件夹");
 
+    Stage stage = (Stage) collectionsTabPane.getScene().getWindow();
     File dir = directoryChooser.showDialog(stage);
     if (dir != null && dir.isDirectory()) {
-      this.thumbnailList.openDirectory(dir.getAbsolutePath());
+      ThumbnailList currentThumbnailList = getCurrentThumbnailList();
+      if (currentThumbnailList != null) {
+        currentThumbnailList.openDirectory(dir.getAbsolutePath());
+      }
     }
   }
 }

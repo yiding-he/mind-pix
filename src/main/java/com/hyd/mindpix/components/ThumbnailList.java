@@ -5,10 +5,11 @@ import com.hyd.mindpix.Events.LoadingImagesEvent;
 import com.hyd.mindpix.MindPixMain;
 import com.hyd.mindpix.utils.ImageUtils;
 import javafx.application.Platform;
+import javafx.beans.property.BooleanProperty;
+import javafx.beans.property.SimpleBooleanProperty;
 import javafx.scene.Node;
 import javafx.scene.image.Image;
 import javafx.scene.input.DragEvent;
-import javafx.scene.input.KeyCode;
 import javafx.scene.input.TransferMode;
 import javafx.scene.layout.FlowPane;
 import lombok.extern.slf4j.Slf4j;
@@ -16,7 +17,6 @@ import lombok.extern.slf4j.Slf4j;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.sql.Array;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -32,10 +32,11 @@ public class ThumbnailList extends FlowPane {
 
   private volatile String currentFolder;
 
+  private Thumbnail currentActiveThumbnail;
+
   public ThumbnailList() {
     setOnDragOver(this::handleDragOver);
     setOnDragDropped(this::handleDragDropped);
-    setFocusTraversable(true);
   }
 
   private List<Thumbnail> getThumbnailList() {
@@ -45,40 +46,67 @@ public class ThumbnailList extends FlowPane {
   }
 
   public void changeActiveThumbnail(int offset) {
+    int currentIndex = -1;
     var thumbnails = getThumbnailList();
-    int activeIndex = -1;
-    for (int i = 0; i < thumbnails.size(); i++) {
-      var thumbnail = thumbnails.get(i);
-      if (thumbnail.isActive()) {
-        activeIndex = i;
-      }
+    if (currentActiveThumbnail != null) {
+      currentIndex = thumbnails.indexOf(currentActiveThumbnail);
     }
 
-    int newIndex = activeIndex + offset;
-    if (newIndex >= 0 && newIndex < getChildren().size()) {
-      if (activeIndex >= 0 && activeIndex != newIndex) {
-        thumbnails.get(activeIndex).setActive(false);
+    int newIndex = Math.max(0, Math.min(currentIndex + offset, thumbnails.size() - 1));
+    if (currentIndex != newIndex) {
+      if (currentIndex >= 0) {
+        thumbnails.get(currentIndex).setActive(false);
       }
       Thumbnail th = thumbnails.get(newIndex);
       th.setActive(true);
+      currentActiveThumbnail = th;
       MindPixMain.publish(new Events.ActiveThumbnailEvent.ActiveThumbnailChanged(th));
     }
   }
 
   public void changeActiveThumbnail(Thumbnail th) {
-    var thumbnails = getThumbnailList();
-    int activeIndex = -1;
-    for (int i = 0; i < thumbnails.size(); i++) {
-      var t = thumbnails.get(i);
-      if (t.isActive()) {
-        activeIndex = i;
-      }
+    if (th == null || th.isActive()) {
+      return;
     }
-    if (activeIndex >= 0) {
-      thumbnails.get(activeIndex).setActive(false);
+    if (currentActiveThumbnail != null) {
+      currentActiveThumbnail.setActive(false);
     }
     th.setActive(true);
+    currentActiveThumbnail = th;
     MindPixMain.publish(new Events.ActiveThumbnailEvent.ActiveThumbnailChanged(th));
+  }
+
+  public Thumbnail popupCurrentThumbnail() {
+    if (currentActiveThumbnail == null) {
+      return null;
+    }
+    var result = currentActiveThumbnail;
+    getChildren().remove(currentActiveThumbnail);
+    currentActiveThumbnail = null;
+    return result;
+  }
+
+  public void addThumbnail(Thumbnail thumbnail) {
+    if (thumbnail != null) {
+      this.getChildren().add(thumbnail);
+    }
+  }
+
+  /**
+   * 是否允许独立加载图片文件夹
+   */
+  private final BooleanProperty loadable = new SimpleBooleanProperty(true);
+
+  public boolean isLoadable() {
+    return loadable.get();
+  }
+
+  public void setLoadable(boolean loadable) {
+    this.loadable.set(loadable);
+  }
+
+  public BooleanProperty loadableProperty() {
+    return loadable;
   }
 
   private void handleDragDropped(DragEvent event) {
@@ -89,9 +117,11 @@ public class ThumbnailList extends FlowPane {
 
   private void handleDragOver(DragEvent event) {
     if (
-      event.getDragboard().hasFiles() &&
+      this.isLoadable() &&
+        event.getDragboard().hasFiles() &&
         event.getDragboard().getFiles().size() == 1 &&
-        event.getDragboard().getFiles().getFirst().isDirectory()) {
+        event.getDragboard().getFiles().getFirst().isDirectory()
+    ) {
       event.acceptTransferModes(TransferMode.MOVE);
     }
     event.consume();

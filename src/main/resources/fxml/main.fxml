@@ -39,15 +39,6 @@
         </top>
         <center>
           <TabPane fx:id="collectionsTabPane">
-            <Tab text="默认集合" closable="false" fx:id="defaultTab">
-              <ScrollPane fitToWidth="true" fitToHeight="true" fx:id="thumbnailScrollPane">
-                <ThumbnailList fx:id="thumbnailList" hgap="10" vgap="10">
-                  <padding>
-                    <Insets bottom="10" left="10" right="10" top="10"/>
-                  </padding>
-                </ThumbnailList>
-              </ScrollPane>
-            </Tab>
           </TabPane>
         </center>
       </BorderPane>
