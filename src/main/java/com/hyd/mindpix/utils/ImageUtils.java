@@ -18,11 +18,14 @@ public class ImageUtils {
    * @return 缩放后的图像
    */
   public static Image resize(Image source, int targetWidth, int targetHeight) {
-    // 将 JavaFX Image 转换为 BufferedImage
     BufferedImage bufferedImage = SwingFXUtils.fromFXImage(source, null);
+    BufferedImage scaledImage = resize(bufferedImage, targetWidth, targetHeight);
+    return SwingFXUtils.toFXImage(scaledImage, null);
+  }
 
+  public static BufferedImage resize(BufferedImage src, int targetWidth, int targetHeight) {
     // 计算原始图像的宽高比
-    double originalRatio = (double) bufferedImage.getWidth() / bufferedImage.getHeight();
+    double originalRatio = (double) src.getWidth() / src.getHeight();
     double targetRatio = (double) targetWidth / targetHeight;
 
     // 根据纵横比调整目标尺寸
@@ -38,12 +41,10 @@ public class ImageUtils {
     }
 
     // 使用 imgscalr 进行高质量缩放
-    BufferedImage scaledImage = Scalr.resize(bufferedImage, Scalr.Method.QUALITY,
+    BufferedImage scaledImage = Scalr.resize(src, Scalr.Method.QUALITY,
       Scalr.Mode.FIT_EXACT, adjustedWidth, adjustedHeight,
       Scalr.OP_ANTIALIAS);
-
-    // 将 BufferedImage 转换回 JavaFX Image 并返回
-    return SwingFXUtils.toFXImage(scaledImage, null);
+    return scaledImage;
   }
 
 }

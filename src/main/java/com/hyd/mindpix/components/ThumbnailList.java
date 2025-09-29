@@ -7,13 +7,16 @@ import com.hyd.mindpix.utils.ImageUtils;
 import javafx.application.Platform;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
+import javafx.embed.swing.SwingFXUtils;
 import javafx.scene.Node;
+import javafx.scene.control.Alert;
 import javafx.scene.image.Image;
 import javafx.scene.input.DragEvent;
 import javafx.scene.input.TransferMode;
 import javafx.scene.layout.FlowPane;
 import lombok.extern.slf4j.Slf4j;
 
+import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -145,6 +148,7 @@ public class ThumbnailList extends FlowPane {
 
         var total = (int) this.getChildren().stream().filter(child -> child instanceof Thumbnail).count();
         var counter = new AtomicInteger();
+        var errorAlerted = new Boolean[]{false};
 
         for (Node child : new ArrayList<>(this.getChildren())) {
           if (!(loadingFolder.equals(currentFolder))) {
@@ -152,15 +156,23 @@ public class ThumbnailList extends FlowPane {
           }
           if (child instanceof Thumbnail thumbnail) {
             String imagePath = thumbnail.getImagePath();
-            try (FileInputStream fis = new FileInputStream(imagePath)) {
-              Image originalImage = new Image(fis);
-              Image thumbnailImage = ImageUtils.resize(originalImage, 180, 180);
-              Platform.runLater(() -> {
-                thumbnail.setImage(thumbnailImage);
-                MindPixMain.publish(new LoadingImagesEvent.Progress(counter.incrementAndGet(), total));
-              });
+            try {
+              BufferedImage bufferedImage = readAsBufferedImage(imagePath);
+              BufferedImage thumbnailImage = ImageUtils.resize(bufferedImage, 180, 180);
+              Platform.runLater(() -> thumbnail.setImage(SwingFXUtils.toFXImage(thumbnailImage, null)));
+              MindPixMain.publish(new LoadingImagesEvent.Progress(counter.incrementAndGet(), total));
             } catch (IOException e) {
-              throw new RuntimeException(e);
+              if (!errorAlerted[0]) {
+                Platform.runLater(() -> {
+                  // show error alert
+                  Alert alert = new Alert(Alert.AlertType.ERROR);
+                  alert.setTitle("图片加载错误");
+                  alert.setHeaderText("图片加载错误，请检查图片文件是否正确。");
+                  alert.setContentText(e.toString());
+                  alert.showAndWait();
+                  errorAlerted[0] = true;
+                });
+              }
             }
           }
         }
@@ -168,6 +180,9 @@ public class ThumbnailList extends FlowPane {
         MindPixMain.publish(new LoadingImagesEvent.Finished());
       }
     });
+  }
 
+  private BufferedImage readAsBufferedImage(String imagePath) throws IOException {
+    return javax.imageio.ImageIO.read(new File(imagePath));
   }
 }

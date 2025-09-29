@@ -8,8 +8,6 @@ import com.hyd.mindpix.components.ThumbnailList;
 import com.hyd.mindpix.enums.ImageDisplayMode;
 import com.hyd.mindpix.enums.ScaleRatio;
 import javafx.application.Platform;
-import javafx.beans.property.ObjectProperty;
-import javafx.beans.property.SimpleObjectProperty;
 import javafx.collections.FXCollections;
 import javafx.scene.control.*;
 import javafx.scene.image.Image;
@@ -21,8 +19,10 @@ import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 @Component
 @Slf4j
@@ -47,8 +47,6 @@ public class MainController {
 
   public TabPane collectionsTabPane;
 
-  private final ObjectProperty<File> currentFolder = new SimpleObjectProperty<>();
-
   public void initialize() {
     // Initialize scale combo box
     scaleComboBox.setItems(FXCollections.observableArrayList(ScaleRatio.values()));
@@ -68,8 +66,13 @@ public class MainController {
     // Set up image change listener
     MindPixApplication.CURRENT_IMAGE.addListener((_, _, imagePath) -> {
       if (imagePath != null) {
-        try {
-          imagePreview.setImage(new Image(new FileInputStream(imagePath)));
+        // 用户点击缩略图查看图片，此时图片文件可能已经不在了
+        Path imageFile = Path.of(imagePath);
+        if (!Files.exists(imageFile)) {
+          return;
+        }
+        try (InputStream fis = Files.newInputStream(imageFile)) {
+          imagePreview.setImage(new Image(fis));
         } catch (IOException e) {
           throw new RuntimeException(e);
         }
@@ -153,14 +156,12 @@ public class MainController {
 
   @EventListener
   public void onLoadingStarted(Events.LoadingImagesEvent.Started event) {
-    log.info("Loading images started.");
-    this.currentFolder.set(new File(event.folderAbsolutePath()));
+    MindPixApplication.CURRENT_FOLDER.set(event.folderAbsolutePath());
     Platform.runLater(() -> readingProgressPane.setMaxHeight(-1));
   }
 
   @EventListener
   public void onLoadingFinished(Events.LoadingImagesEvent.Finished event) {
-    log.info("Loading images finished, progressBar {}", readingProgressBar == null ? "not exists" : "exists");
     Platform.runLater(() -> readingProgressPane.setMaxHeight(0));
   }
 
@@ -191,17 +192,18 @@ public class MainController {
 
   public void openFolder() {
 
+    // 只允许第一个标签页加载文件夹
     this.collectionsTabPane.getSelectionModel().select(0);
 
     DirectoryChooser directoryChooser = new DirectoryChooser();
     directoryChooser.setTitle("选择图片文件夹");
-    if (this.currentFolder.get() != null) {
-      directoryChooser.setInitialDirectory(this.currentFolder.get());
+    if (MindPixApplication.CURRENT_FOLDER.get() != null) {
+      directoryChooser.setInitialDirectory(new File(MindPixApplication.CURRENT_FOLDER.get()));
     }
 
-    // this.currentFolder 属性不在这个方法中赋值，而是通过事件侦听赋值，
+    // CURRENT_FOLDER 属性不在这个方法中赋值，而是通过事件侦听赋值，
     // 因为触发 LoadingImagesEvent.Started 事件的方式有多种，
-    // 所以 this.currentFolder 赋值统一在 LoadingImagesEvent.Started 事件中进行
+    // 所以 CURRENT_FOLDER 赋值统一在 LoadingImagesEvent.Started 事件中进行
     Stage stage = (Stage) collectionsTabPane.getScene().getWindow();
     File dir = directoryChooser.showDialog(stage);
     if (dir != null && dir.isDirectory()) {
