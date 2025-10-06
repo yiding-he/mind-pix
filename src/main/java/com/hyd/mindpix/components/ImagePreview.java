@@ -15,6 +15,7 @@ import javafx.scene.image.ImageView;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseEvent;
+import javafx.scene.input.ScrollEvent;
 import javafx.scene.layout.Background;
 import javafx.scene.layout.BackgroundFill;
 import javafx.scene.layout.CornerRadii;
@@ -69,6 +70,19 @@ public class ImagePreview extends ScrollPane {
       if (event.getCode() == KeyCode.PAGE_UP) {
         MindPixMain.publish(new Events.NavigationEvent.PrevImage());
       } else if (event.getCode() == KeyCode.PAGE_DOWN) {
+        MindPixMain.publish(new Events.NavigationEvent.NextImage());
+      }
+    });
+
+    // Add mouse scroll listener
+    this.addEventFilter(ScrollEvent.SCROLL, event -> {
+      // check if ctrl key is holding down
+      if (event.isControlDown()) {
+
+      }
+      if (event.getDeltaY() > 0) {
+        MindPixMain.publish(new Events.NavigationEvent.PrevImage());
+      } else if (event.getDeltaY() < 0) {
         MindPixMain.publish(new Events.NavigationEvent.NextImage());
       }
     });
