@@ -1,6 +1,7 @@
 package com.hyd.mindpix.components;
 
 import com.hyd.mindpix.Events;
+import com.hyd.mindpix.MindPixApplication;
 import com.hyd.mindpix.MindPixMain;
 import com.hyd.mindpix.enums.ImageDisplayMode;
 import com.hyd.mindpix.enums.ScaleRatio;
@@ -71,6 +72,36 @@ public class ImagePreview extends ScrollPane {
         MindPixMain.publish(new Events.NavigationEvent.PrevImage());
       } else if (event.getCode() == KeyCode.PAGE_DOWN) {
         MindPixMain.publish(new Events.NavigationEvent.NextImage());
+      } else if (event.getCode().isDigitKey()) {
+        String digitText = event.getCode().getChar();
+        try {
+          int tabNumber = Integer.parseInt(digitText);
+          if (tabNumber >= 1 && tabNumber <= 9) {
+            // 从当前活动的ThumbnailList获取当前选中的缩略图
+            ImageCollectionTab currentTab = MindPixApplication.CURRENT_TAB.get();
+            if (currentTab != null) {
+              var currentThumbnail = currentTab.getThumbnailList().getCurrentActiveThumbnail();
+              if (currentThumbnail != null) {
+                log.debug("Transfer image to tab {} from preview: {}", tabNumber, currentThumbnail.getImagePath());
+                MindPixMain.publish(new Events.TransferImageEvent.TransferToTab(tabNumber, currentThumbnail));
+                event.consume();
+              }
+            }
+          }
+        } catch (NumberFormatException e) {
+          log.warn("Invalid digit key: {}", digitText);
+        }
+      } else if (event.getCode() == KeyCode.BACK_QUOTE) {
+        // 从当前活动的ThumbnailList获取当前选中的缩略图
+        ImageCollectionTab currentTab = MindPixApplication.CURRENT_TAB.get();
+        if (currentTab != null) {
+          var currentThumbnail = currentTab.getThumbnailList().getCurrentActiveThumbnail();
+          if (currentThumbnail != null) {
+            log.debug("Transfer image to first tab from preview: {}", currentThumbnail.getImagePath());
+            MindPixMain.publish(new Events.TransferImageEvent.TransferToFirstTab(currentThumbnail));
+            event.consume();
+          }
+        }
       }
     });
 

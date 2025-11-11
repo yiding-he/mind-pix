@@ -7,7 +7,9 @@ import javafx.scene.control.ScrollPane;
 import javafx.scene.control.Tab;
 import javafx.scene.input.KeyCode;
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class ImageCollectionTab extends Tab {
 
   private final String title;
@@ -33,6 +35,28 @@ public class ImageCollectionTab extends Tab {
         MindPixMain.publish(new Events.NavigationEvent.NextImage());
       } else if (event.getCode() == KeyCode.LEFT) {
         MindPixMain.publish(new Events.NavigationEvent.PrevImage());
+      } else if (event.getCode().isDigitKey()) {
+        String digitText = event.getCode().getChar();
+        try {
+          int tabNumber = Integer.parseInt(digitText);
+          if (tabNumber >= 1 && tabNumber <= 9) {
+            var currentThumbnail = thumbnailList.getCurrentActiveThumbnail();
+            if (currentThumbnail != null) {
+              log.debug("Transfer image to tab {}: {}", tabNumber, currentThumbnail.getImagePath());
+              MindPixMain.publish(new Events.TransferImageEvent.TransferToTab(tabNumber, currentThumbnail));
+              event.consume();
+            }
+          }
+        } catch (NumberFormatException e) {
+          log.warn("Invalid digit key: {}", digitText);
+        }
+      } else if (event.getCode() == KeyCode.BACK_QUOTE) {
+        var currentThumbnail = thumbnailList.getCurrentActiveThumbnail();
+        if (currentThumbnail != null) {
+          log.debug("Transfer image to first tab: {}", currentThumbnail.getImagePath());
+          MindPixMain.publish(new Events.TransferImageEvent.TransferToFirstTab(currentThumbnail));
+          event.consume();
+        }
       }
     });
 

@@ -113,4 +113,11 @@ public class Thumbnail extends StackPane {
   public BooleanProperty activeProperty() {
     return this.active;
   }
+
+  /**
+   * 重置缩略图的选中状态，用于图片转移时
+   */
+  public void resetState() {
+    this.active.set(false);
+  }
 }

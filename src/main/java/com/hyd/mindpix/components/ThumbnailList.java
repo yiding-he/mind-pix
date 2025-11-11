@@ -10,7 +10,6 @@ import javafx.beans.property.SimpleBooleanProperty;
 import javafx.embed.swing.SwingFXUtils;
 import javafx.scene.Node;
 import javafx.scene.control.Alert;
-import javafx.scene.image.Image;
 import javafx.scene.input.DragEvent;
 import javafx.scene.input.TransferMode;
 import javafx.scene.layout.FlowPane;
@@ -18,7 +17,6 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.awt.image.BufferedImage;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -89,10 +87,8 @@ public class ThumbnailList extends FlowPane {
     return result;
   }
 
-  public void addThumbnail(Thumbnail thumbnail) {
-    if (thumbnail != null) {
-      this.getChildren().add(thumbnail);
-    }
+  public Thumbnail getCurrentActiveThumbnail() {
+    return currentActiveThumbnail;
   }
 
   /**
@@ -184,5 +180,45 @@ public class ThumbnailList extends FlowPane {
 
   private BufferedImage readAsBufferedImage(String imagePath) throws IOException {
     return javax.imageio.ImageIO.read(new File(imagePath));
+  }
+
+  public void removeThumbnail(Thumbnail thumbnail) {
+    Platform.runLater(() -> {
+      // 确保重置被移除的缩略图状态
+      thumbnail.resetState();
+
+      getChildren().remove(thumbnail);
+      if (thumbnail == currentActiveThumbnail) {
+        currentActiveThumbnail = null;
+        // 选择新的活动缩略图
+        if (!getChildren().isEmpty()) {
+          Node firstNode = getChildren().get(0);
+          if (firstNode instanceof Thumbnail) {
+            ((Thumbnail) firstNode).setActive(true);
+            currentActiveThumbnail = (Thumbnail) firstNode;
+          }
+        }
+      }
+    });
+  }
+
+  public void addThumbnail(Thumbnail thumbnail) {
+    addThumbnail(thumbnail, false);
+  }
+
+  /**
+   * 添加缩略图到列表
+   * @param thumbnail 要添加的缩略图
+   * @param autoSelect 是否自动选中该缩略图
+   */
+  public void addThumbnail(Thumbnail thumbnail, boolean autoSelect) {
+    Platform.runLater(() -> {
+      getChildren().add(thumbnail);
+      if (autoSelect && currentActiveThumbnail == null) {
+        // 只有在当前没有选中任何缩略图时才自动选中
+        thumbnail.setActive(true);
+        currentActiveThumbnail = thumbnail;
+      }
+    });
   }
 }

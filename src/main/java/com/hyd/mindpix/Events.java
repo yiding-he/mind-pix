@@ -34,4 +34,12 @@ public interface Events {
     record ActiveThumbnailChanged(Thumbnail thumbnail) {
     }
   }
+
+  interface TransferImageEvent {
+    record TransferToTab(int tabNumber, Thumbnail thumbnail) {
+    }
+
+    record TransferToFirstTab(Thumbnail thumbnail) {
+    }
+  }
 }

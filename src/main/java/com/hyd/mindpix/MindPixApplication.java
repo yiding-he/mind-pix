@@ -1,7 +1,10 @@
 package com.hyd.mindpix;
 
+import com.hyd.mindpix.components.ImageCollectionTab;
 import javafx.application.Application;
 import javafx.application.Platform;
+import javafx.beans.property.ObjectProperty;
+import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
@@ -16,6 +19,8 @@ public class MindPixApplication extends Application {
   public static final SimpleStringProperty CURRENT_IMAGE = new SimpleStringProperty();
 
   public static final SimpleStringProperty CURRENT_FOLDER = new SimpleStringProperty();
+
+  public static final ObjectProperty<ImageCollectionTab> CURRENT_TAB = new SimpleObjectProperty<>();
 
   public static final String TITLE_PREFIX = "Mind Pix - 图库浏览整理工具";
 

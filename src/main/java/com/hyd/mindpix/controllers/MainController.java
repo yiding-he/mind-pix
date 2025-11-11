@@ -4,6 +4,7 @@ import com.hyd.mindpix.Events;
 import com.hyd.mindpix.MindPixApplication;
 import com.hyd.mindpix.components.ImageCollectionTab;
 import com.hyd.mindpix.components.ImagePreview;
+import com.hyd.mindpix.components.Thumbnail;
 import com.hyd.mindpix.components.ThumbnailList;
 import com.hyd.mindpix.enums.ImageDisplayMode;
 import com.hyd.mindpix.enums.ScaleRatio;
@@ -84,6 +85,15 @@ public class MainController {
     ImageCollectionTab defaultCollection = new ImageCollectionTab("[默认集合]");
     defaultCollection.setClosable(false);
     this.collectionsTabPane.getTabs().add(defaultCollection);
+
+    // 设置Tab选择监听器来更新CURRENT_TAB
+    collectionsTabPane.getSelectionModel().selectedItemProperty().addListener((_, _, newTab) -> {
+      if (newTab instanceof ImageCollectionTab imageCollectionTab) {
+        MindPixApplication.CURRENT_TAB.set(imageCollectionTab);
+      }
+    });
+    // 初始化CURRENT_TAB为默认Tab
+    MindPixApplication.CURRENT_TAB.set(defaultCollection);
   }
 
   //----------------------------------------------------
@@ -173,6 +183,78 @@ public class MainController {
       }
       readingProgressBar.setProgress(event.progress());
       readingProgressLabel.setText(event.current() + "/" + event.total());
+    });
+  }
+
+  @EventListener
+  public void onTransferImageToTab(Events.TransferImageEvent.TransferToTab event) {
+    int tabNumber = event.tabNumber();
+    Thumbnail thumbnail = event.thumbnail();
+
+    Platform.runLater(() -> {
+      // 查找目标标签页
+      ImageCollectionTab targetTab = findTabByNumber(tabNumber);
+
+      // 如果目标标签页不存在，创建新的
+      if (targetTab == null) {
+        targetTab = new ImageCollectionTab(String.valueOf(tabNumber));
+        collectionsTabPane.getTabs().add(targetTab);
+        // 设置新建的Tab为CURRENT_TAB（这里不需要，因为TabPane的监听器会自动处理）
+      }
+
+      // 获取当前标签页
+      ImageCollectionTab sourceTab = getCurrentCollectionTab();
+      if (sourceTab == null || sourceTab == targetTab) {
+        return; // 无法转移或不需要转移
+      }
+
+      // 从源标签页移除缩略图（removeThumbnail会自动重置状态）
+      sourceTab.getThumbnailList().removeThumbnail(thumbnail);
+
+      // 添加到目标标签页（不自动选中）
+      targetTab.getThumbnailList().addThumbnail(thumbnail, false);
+
+      log.info("Transferred image from tab '{}' to tab '{}' : {}",
+               sourceTab.getText(), targetTab.getText(), thumbnail.getImagePath());
+    });
+  }
+
+  private ImageCollectionTab findTabByNumber(int number) {
+    String tabTitle = String.valueOf(number);
+    return collectionsTabPane.getTabs().stream()
+        .filter(tab -> tab instanceof ImageCollectionTab)
+        .map(tab -> (ImageCollectionTab) tab)
+        .filter(tab -> tabTitle.equals(tab.getText()))
+        .findFirst()
+        .orElse(null);
+  }
+
+  @EventListener
+  public void onTransferImageToFirstTab(Events.TransferImageEvent.TransferToFirstTab event) {
+    Thumbnail thumbnail = event.thumbnail();
+
+    Platform.runLater(() -> {
+      // 获取第一个标签页（索引为0的Tab）
+      Tab firstTab = collectionsTabPane.getTabs().get(0);
+      if (!(firstTab instanceof ImageCollectionTab targetTab)) {
+        log.warn("First tab is not an ImageCollectionTab");
+        return;
+      }
+
+      // 获取当前标签页
+      ImageCollectionTab sourceTab = getCurrentCollectionTab();
+      if (sourceTab == null || sourceTab == targetTab) {
+        return; // 无法转移或不需要转移
+      }
+
+      // 从源标签页移除缩略图（removeThumbnail会自动重置状态）
+      sourceTab.getThumbnailList().removeThumbnail(thumbnail);
+
+      // 添加到第一个标签页（不自动选中）
+      targetTab.getThumbnailList().addThumbnail(thumbnail, false);
+
+      log.info("Transferred image from tab '{}' to first tab: {}",
+               sourceTab.getText(), thumbnail.getImagePath());
     });
   }
 
