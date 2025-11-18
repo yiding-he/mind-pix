@@ -13,15 +13,13 @@ import javafx.scene.control.Alert;
 import javafx.scene.input.DragEvent;
 import javafx.scene.input.TransferMode;
 import javafx.scene.layout.FlowPane;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 @Slf4j
@@ -33,6 +31,7 @@ public class ThumbnailList extends FlowPane {
 
   private volatile String currentFolder;
 
+  @Getter
   private Thumbnail currentActiveThumbnail;
 
   public ThumbnailList() {
@@ -87,10 +86,6 @@ public class ThumbnailList extends FlowPane {
     return result;
   }
 
-  public Thumbnail getCurrentActiveThumbnail() {
-    return currentActiveThumbnail;
-  }
-
   /**
    * 是否允许独立加载图片文件夹
    */
@@ -130,7 +125,9 @@ public class ThumbnailList extends FlowPane {
 
     currentFolder = absolutePath;
     this.getChildren().clear();
-    for (File file : Objects.requireNonNull(new File(absolutePath).listFiles())) {
+    var files = Objects.requireNonNull(new File(absolutePath).listFiles());
+    Arrays.sort(files, Comparator.comparing(File::getName));
+    for (File file : files) {
       if (file.isFile() && SUPPORTED_IMAGE_EXTENSIONS.stream().anyMatch(ext -> file.getName().endsWith(ext))) {
         Thumbnail thumbnail = new Thumbnail(file.getAbsolutePath());
         this.getChildren().add(thumbnail);
