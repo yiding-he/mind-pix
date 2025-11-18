@@ -8,6 +8,9 @@ import org.springframework.context.ApplicationContext;
 @SpringBootApplication
 public class MindPixMain {
 
+  // 默认集合名称常量
+  public static final String DEFAULT_COLLECTION_NAME = "[默认集合]";
+
   public static ApplicationContext applicationContext;
 
   public static void publish(Object event) {

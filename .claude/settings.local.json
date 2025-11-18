@@ -2,7 +2,10 @@
   "permissions": {
     "allow": [
       "Bash(tree:*)",
-      "Bash(xargs:*)"
+      "Bash(xargs:*)",
+      "WebSearch",
+      "WebFetch(domain:javadoc.webfx.dev)",
+      "WebFetch(domain:openjfx.io)"
     ],
     "deny": [],
     "ask": []

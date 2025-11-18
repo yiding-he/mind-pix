@@ -3,8 +3,7 @@ package com.hyd.mindpix.components;
 import com.hyd.mindpix.Events;
 import com.hyd.mindpix.MindPixMain;
 import javafx.geometry.Insets;
-import javafx.scene.control.ScrollPane;
-import javafx.scene.control.Tab;
+import javafx.scene.control.*;
 import javafx.scene.input.KeyCode;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -12,7 +11,9 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class ImageCollectionTab extends Tab {
 
+  @Getter
   private final String title;
+  private Label tabLabel; // 用于显示标题的Label，支持右键菜单
 
   @Getter
   private final ScrollPane scrollPane = new ScrollPane();
@@ -22,6 +23,9 @@ public class ImageCollectionTab extends Tab {
 
   public ImageCollectionTab(String title) {
     this.title = title;
+
+    // 移除关闭按钮
+    this.setClosable(false);
 
     this.thumbnailList.setHgap(10);
     this.thumbnailList.setVgap(10);
@@ -61,8 +65,46 @@ public class ImageCollectionTab extends Tab {
     });
 
 
-    this.setText(title);
     this.setContent(this.scrollPane);
+
+    // 设置自定义标题标签以支持右键菜单（不要同时调用setText，否则会导致重复显示）
+    setupTabLabel(title);
+  }
+
+  private void setupTabLabel(String title) {
+    // 创建用于显示标题的Label
+    tabLabel = new Label(title);
+
+    // 创建右键菜单
+    ContextMenu contextMenu = new ContextMenu();
+    MenuItem closeItem = new MenuItem("关闭");
+
+    // 设置关闭菜单项的事件处理
+    closeItem.setOnAction(event -> {
+      // 只允许关闭非默认集合的Tab
+      if (!MindPixMain.DEFAULT_COLLECTION_NAME.equals(title) && getTabPane() != null) {
+        getTabPane().getTabs().remove(this);
+      }
+    });
+
+    // 默认禁用第一个Tab的关闭功能
+    closeItem.setDisable(MindPixMain.DEFAULT_COLLECTION_NAME.equals(title));
+
+    contextMenu.getItems().add(closeItem);
+
+    // 为Label设置右键菜单
+    tabLabel.setContextMenu(contextMenu);
+
+    // 将Label设置为Tab的图形
+    this.setGraphic(tabLabel);
+
+    // 监听标题变化，更新Label（注意：不要调用setText，否则又会导致重复）
+    textProperty().addListener((obs, oldText, newText) -> {
+      if (tabLabel != null) {
+        tabLabel.setText(newText);
+        // 重要：不要调用setText，因为我们使用graphic来显示标题
+      }
+    });
   }
 
   public void scrollToActiveThumbnail(Thumbnail thumbnail) {

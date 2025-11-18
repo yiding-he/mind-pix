@@ -2,6 +2,7 @@ package com.hyd.mindpix.controllers;
 
 import com.hyd.mindpix.Events;
 import com.hyd.mindpix.MindPixApplication;
+import com.hyd.mindpix.MindPixMain;
 import com.hyd.mindpix.components.ImageCollectionTab;
 import com.hyd.mindpix.components.ImagePreview;
 import com.hyd.mindpix.components.Thumbnail;
@@ -82,9 +83,11 @@ public class MainController {
       }
     });
 
-    ImageCollectionTab defaultCollection = new ImageCollectionTab("[默认集合]");
-    defaultCollection.setClosable(false);
+    ImageCollectionTab defaultCollection = new ImageCollectionTab(MindPixMain.DEFAULT_COLLECTION_NAME);
     this.collectionsTabPane.getTabs().add(defaultCollection);
+
+    // 设置Tab标题的最小宽度
+    collectionsTabPane.setTabMinWidth(50);
 
     // 设置Tab选择监听器来更新CURRENT_TAB
     collectionsTabPane.getSelectionModel().selectedItemProperty().addListener((_, _, newTab) -> {
@@ -199,6 +202,8 @@ public class MainController {
       if (targetTab == null) {
         targetTab = new ImageCollectionTab(String.valueOf(tabNumber));
         collectionsTabPane.getTabs().add(targetTab);
+        // 新增Tab后排序
+        sortTabsByTitle();
         // 设置新建的Tab为CURRENT_TAB（这里不需要，因为TabPane的监听器会自动处理）
       }
 
@@ -215,8 +220,46 @@ public class MainController {
       targetTab.getThumbnailList().addThumbnail(thumbnail, false);
 
       log.info("Transferred image from tab '{}' to tab '{}' : {}",
-               sourceTab.getText(), targetTab.getText(), thumbnail.getImagePath());
+               sourceTab.getTitle(), targetTab.getTitle(), thumbnail.getImagePath());
     });
+  }
+
+  private void sortTabsByTitle() {
+    // 保留第一个Tab（默认集合），对其他Tab按标题排序
+    if (collectionsTabPane.getTabs().size() <= 1) {
+      return; // 只有1个或没有Tab时不需要排序
+    }
+
+    // 保存当前选中的Tab
+    Tab selectedTab = collectionsTabPane.getSelectionModel().getSelectedItem();
+
+    // 取出所有Tab，保留第一个，对其他Tab排序
+    var allTabs = new java.util.ArrayList<>(collectionsTabPane.getTabs());
+    var firstTab = allTabs.getFirst();
+    var otherTabs = allTabs.subList(1, allTabs.size()).stream()
+        .sorted((tab1, tab2) -> {
+          // 从ImageCollectionTab的Label图形中获取标题文本
+          if (tab1 instanceof ImageCollectionTab imageTab1 && tab2 instanceof ImageCollectionTab imageTab2) {
+            String text1 = imageTab1.getTitle();
+            String text2 = imageTab2.getTitle();
+            return text1.compareTo(text2);
+          }
+          return 0;
+        })
+        .toList();
+
+    // 重新组合：第一个 + 排序后的其他Tab
+    var sortedTabs = new java.util.ArrayList<Tab>();
+    sortedTabs.add(firstTab);
+    sortedTabs.addAll(otherTabs);
+
+    // 一次性设置回去
+    collectionsTabPane.getTabs().setAll(sortedTabs);
+
+    // 恢复之前选中的Tab（如果还在的话）
+    if (selectedTab != null && sortedTabs.contains(selectedTab)) {
+      collectionsTabPane.getSelectionModel().select(selectedTab);
+    }
   }
 
   private ImageCollectionTab findTabByNumber(int number) {
@@ -224,7 +267,7 @@ public class MainController {
     return collectionsTabPane.getTabs().stream()
         .filter(tab -> tab instanceof ImageCollectionTab)
         .map(tab -> (ImageCollectionTab) tab)
-        .filter(tab -> tabTitle.equals(tab.getText()))
+        .filter(tab -> tabTitle.equals(tab.getTitle()))  // 使用getTitle()而不是getText()
         .findFirst()
         .orElse(null);
   }
@@ -254,7 +297,7 @@ public class MainController {
       targetTab.getThumbnailList().addThumbnail(thumbnail, false);
 
       log.info("Transferred image from tab '{}' to first tab: {}",
-               sourceTab.getText(), thumbnail.getImagePath());
+               sourceTab.getTitle(), thumbnail.getImagePath());
     });
   }
 
