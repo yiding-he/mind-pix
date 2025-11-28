@@ -16,6 +16,7 @@ import javafx.scene.layout.FlowPane;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
+import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
@@ -121,6 +122,10 @@ public class ThumbnailList extends FlowPane {
     event.consume();
   }
 
+  private int getChildIndex(Node node) {
+    return getChildren().indexOf(node);
+  }
+
   public void openDirectory(String absolutePath) {
 
     currentFolder = absolutePath;
@@ -142,6 +147,7 @@ public class ThumbnailList extends FlowPane {
         var total = (int) this.getChildren().stream().filter(child -> child instanceof Thumbnail).count();
         var counter = new AtomicInteger();
         var errorAlerted = new Boolean[]{false};
+        var firstThumbnailSelected = new Boolean[]{false}; // 用于标记第一个缩略图是否已选中
 
         for (Node child : new ArrayList<>(this.getChildren())) {
           if (!(loadingFolder.equals(currentFolder))) {
@@ -152,7 +158,15 @@ public class ThumbnailList extends FlowPane {
             try {
               BufferedImage bufferedImage = readAsBufferedImage(imagePath);
               BufferedImage thumbnailImage = ImageUtils.resize(bufferedImage, 180, 180);
-              Platform.runLater(() -> thumbnail.setImage(SwingFXUtils.toFXImage(thumbnailImage, null)));
+              Platform.runLater(() -> {
+                thumbnail.setImage(SwingFXUtils.toFXImage(thumbnailImage, null));
+
+                // 如果是第一个缩略图且尚未选中，则选中它
+                if (!firstThumbnailSelected[0] && getChildIndex(thumbnail) == 0) {
+                  changeActiveThumbnail(thumbnail);
+                  firstThumbnailSelected[0] = true;
+                }
+              });
               MindPixMain.publish(new LoadingImagesEvent.Progress(counter.incrementAndGet(), total));
             } catch (IOException e) {
               if (!errorAlerted[0]) {
@@ -176,7 +190,11 @@ public class ThumbnailList extends FlowPane {
   }
 
   private BufferedImage readAsBufferedImage(String imagePath) throws IOException {
-    return javax.imageio.ImageIO.read(new File(imagePath));
+    var image = ImageIO.read(new File(imagePath));
+    if (image == null) {
+      throw new IOException("无法读取图片文件: " + imagePath);
+    }
+    return image;
   }
 
   public void removeThumbnail(Thumbnail thumbnail) {
