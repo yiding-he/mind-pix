@@ -6,8 +6,7 @@
       "WebSearch",
       "WebFetch(domain:javadoc.webfx.dev)",
       "WebFetch(domain:openjfx.io)",
-      "Bash(find:*)",
-      "Bash(mvn clean:*)"
+      "Bash(find:*)"
     ],
     "deny": [],
     "ask": []
