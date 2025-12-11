@@ -2,6 +2,7 @@ package com.hyd.mindpix.controllers;
 
 import com.hyd.mindpix.Events;
 import com.hyd.mindpix.MindPixApplication;
+import com.hyd.mindpix.MindPixConfig;
 import com.hyd.mindpix.MindPixMain;
 import com.hyd.mindpix.components.ImageCollectionTab;
 import com.hyd.mindpix.components.ImagePreview;
@@ -171,6 +172,11 @@ public class MainController {
   public void onLoadingStarted(Events.LoadingImagesEvent.Started event) {
     MindPixApplication.CURRENT_FOLDER.set(event.folderAbsolutePath());
     Platform.runLater(() -> readingProgressPane.setMaxHeight(-1));
+
+    // 更新配置中的最后打开目录
+    MindPixConfig config = MindPixConfig.getInstance();
+    config.setLastOpenedDir(event.folderAbsolutePath());
+    config.save();
   }
 
   @EventListener

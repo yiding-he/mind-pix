@@ -47,4 +47,11 @@ public class MindPixApplication extends Application {
     stage.setScene(new Scene(fxmlLoader.load(), 1200, 700));
     stage.show();
   }
+
+  @Override
+  public void stop() {
+    // 应用退出时保存配置
+    MindPixConfig config = MindPixConfig.getInstance();
+    config.save();
+  }
 }
